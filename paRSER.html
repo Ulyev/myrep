@@ -1,0 +1,231 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+	</head>
+	<body>
+		<script type='text/javascript'>
+			function start_parse(){
+				arr={};
+				txt=document.getElementById('element').value;
+				res_JSON=new Array();
+				
+				glav_string=parse_to_row(txt);
+				arr=parse_it(arr, txt, 0,'',res_JSON);
+				print_r(arr, false, document.getElementById('result'));
+			}
+		
+			function parse_to_row(txt){//Функция, разбивающая json по уровням вложенности
+				txt=change_string(txt, 0);//Убираем первый символ в строке
+				txt=change_string(txt, txt.length-1);//Убираем последний символ в строке
+				flag=false;
+				
+				count_kovitckha=0;
+				string=new Array();
+				count=txt.split('{').length - 1+txt.split('[').length - 1;
+				for (i=0; i<count;i++){
+					string[i]='';
+				}
+				chetchick_elem=0;
+					for (i=0; i<txt.length; i++){
+						if (txt.charAt(i)=='{' || txt.charAt(i)=='['){//Если встретили подмассив или новый объект
+							string[chetchick_elem]='';
+							flag=true;
+							
+						}
+						if ((txt.charAt(i)=='}' || txt.charAt(i)==']') /*&& i+1<txt.length && txt.charAt(i+1)=="," */){
+							string[chetchick_elem]+=txt.charAt(i);
+							flag=false;
+							chetchick_elem++;
+						}
+						if (flag==true){
+							string[chetchick_elem]+=txt.charAt(i);
+						}
+						//document.getElementById('result').innerHTML=document.getElementById('result').innerHTML+txt.charAt(i)+"-"+flag+"<br/>";
+					}
+					return string;
+			}
+			
+			function parse_it(arr, txt, count, type,res_JSON){
+				if (count!=0){
+					string=parse_to_row(txt);
+				} else {
+					alert(glav_string[1]);
+					string=glav_string;
+				}
+				
+				txt=change_string(txt, 0);//Убираем первый символ в строке
+				
+				//Убираем последний символ в строке
+				for (i=txt.length; i>0;i--){
+					if (txt[i]=='}'){
+						txt=change_string(txt, i);
+						break;
+					}
+				}
+				
+				//Вложенный массив у нас сохранился в string, что бы его не анализировать убираем все то, что в скобках
+				flag=false;
+				string_pars='';
+				txt2=txt;
+				for (i=0; i<txt.length;i++){
+					if (txt[i]=='{'){
+						//alert(txt[i]);
+						flag=true;
+					}
+					if (flag==true){
+						string_pars+=txt[i];
+					}
+					if (txt[i]=='}'){
+						string_pars=string_pars.replace(/{/,'');
+						//string_pars=string_pars.replace(/}/,'');
+						txt2=txt2.replace(string_pars,'}"');
+						string_pars='';
+						flag=false;
+					}
+				}
+				txt=txt2;
+				//alert(txt);
+				//парсес
+				res_JSON[count]=txt.split(/",/);
+				
+				for (i=0; i<res_JSON[count].length; i++){
+					res_JSON[count][i]=res_JSON[count][i].split(':');
+					for (k=0; k<res_JSON[count][i].length; k++){
+						res_JSON[count][i][k]=res_JSON[count][i][k].replace(/["]/g,'');//убираем все ковычки
+						if (k==0){
+							res_JSON[count][i][k]=res_JSON[count][i][k].replace(/(^\s+|\s+$)/g,'');//убираем все пробелы
+						}	
+					}
+				}//На выходе получаем массив второго уровня вложенности [1]-> ключ, [2]->значение
+				
+				
+				for (i=0; i<res_JSON[count].length; i++){
+					//document.getElementById('hepler').innerHTML+=res_JSON[count][i][0]+' - '+res_JSON[count][i][0]+"<br/>";
+					//alert(res_JSON[count][i]);
+					if (typeof(res_JSON[count][i][0])!=='undefined' || typeof(res_JSON[count][i][1])!=='undefined'){
+						if (/{/g.test(res_JSON[count][i][1]) || /{/g.test(res_JSON[count][i][0])){
+							//alert(res_JSON[count][i][0]);
+							arr=parse_it(arr, string[count],count+1,res_JSON[count][i][0],res_JSON[count]);
+						}
+						if (typeof(res_JSON[count][i])!=='undefined'){
+							if (type!='' && type!=='undefined'){
+								if (typeof(arr[type])=='undefined'){
+									arr[type]={};
+								}
+								arr[type][res_JSON[count][i][0]]=res_JSON[count][i][1];
+							} else {
+								arr[res_JSON[count][i][0]]=res_JSON[count][i][1];
+							}
+							
+						}
+					}
+					/*
+					alert(count+" ! "+res_JSON[count][i][0]);
+					alert(count+" ! "+res_JSON[count][i][1]);
+					*/
+				}
+				return arr;
+			}
+			
+			function change_string(string, number){
+				string=string.split('');
+				for (i = number; i < string.length-1; i++){
+					string[i]=string[i+1];
+				}
+				str="";
+				for (i=0; i<string.length-1;i++){
+					str+=string[i];
+				}
+				return str;
+			}
+			
+			  function print_r( array, return_val, obj) {
+
+      var output = "", pad_char = " ", pad_val = 4;
+
+      var formatArray = function (obj, cur_depth, pad_val, pad_char) {
+
+         if(cur_depth > 0)
+
+            cur_depth++;
+
+         var base_pad = repeat_char(pad_val*cur_depth, pad_char);
+
+         var thick_pad = repeat_char(pad_val*(cur_depth+1), pad_char);
+
+         var str = "<ul>";
+
+         if(obj instanceof Array || obj instanceof Object) {
+
+            str += base_pad;
+
+            for(var key in obj) {
+
+               if(obj[key] instanceof Array || obj[key] instanceof Object) {
+
+                  str += "<li>"+thick_pad + "["+key+"] -> "+formatArray(obj[key], cur_depth+1, pad_val, pad_char)+"</li>";
+
+               } else {
+
+                  str += "<li>"+thick_pad + "["+key+"] -> " + obj[key] + "\n"+"</li>";
+
+               }
+
+            }
+
+            str += base_pad;
+
+         } else {
+
+            str = obj.toString();
+
+         };
+         str+="</ul>";
+         return str;
+
+      };
+
+    
+
+      var repeat_char = function (len, char) {
+
+         var str = "";
+
+         for(var i=0; i < len; i++) { str += char; };
+
+         return str;
+
+      };
+
+      output = formatArray(array, 0, pad_val, pad_char);
+
+      if(return_val !== true) {
+
+          obj.innerHTML=obj.innerHTML+"<pre>" + output + "</pre>";
+
+         return true;
+
+      } else {
+
+         return output;
+
+      }
+
+   }
+		</script>
+		<textarea id='element' style='width:500px; height:500px; resize:none; padding:5px;'>
+{
+   "firstName": "Иван",
+   "lastName": "Иванов",
+   "address": {
+       "streetAddress": "Московское ш., 101, кв.101",
+       "city": "Ленинград",
+       "postalCode": 101101
+   },
+   "lastName2": "Иванов"
+}</textarea>
+		<div id='result' style='float:right; border:dashed 1px green; display:bloach; width:500px; height:500px; padding:5px;'></div>
+		<button onclick=start_parse()>Click here</button>
+		<div id='hepler'></div>
+	</body>
+</html>
